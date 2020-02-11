@@ -1,0 +1,140 @@
+---
+title: "Class09"
+author: "Kimberly"
+date: "2/4/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## K-means clustering with function `kmeans()`
+```{r}
+# Generate some example data for clustering
+
+# recall rnorm calls random data from a normal distribution
+##creating 2 random, distinct data sets
+###30 points, centered around -3 (red box) & 30 points centered around 3 (blue box)
+tmp <- c(rnorm(30,-3), rnorm(30,3))
+# recall cbind concatenates/combines the data columns from the tmp vectors (picture: red box on top of blue box)
+##rev(tmp) reverses the vector's order (picture: blue box on top of red box)
+x <- cbind(x=tmp, y=rev(tmp))
+plot(x)
+
+```
+
+Use the kmeans() function setting k to 2 and nstart=20 
+
+Inspect/print the results 
+*Q1. How many points are in each cluster?* --> 30 each group (clustering vector shows you which values are in which group)
+*Q2. What ‘component’ of your result object details* ("available components" are what outputs are available)        
+      - *cluster size?* --> `km$Size`
+      - *cluster assignment/membership?* --> `km$cluster`
+      - *cluster center?* --> `length(km$cluster)`
+                              `table(km$cluster)` tells u how many in each group
+```{r}
+# cluster the data into 2 groups
+km <- kmeans(x, centers = 2, nstart = 20)
+km
+```
+```{r}
+# Q3. Plot x colored by the kmeans cluster assignment and add cluster centers as blue points.
+plot(x, col=km$cluster)
+# cex changes the size of the dot; pch is plot character
+points(km$centers, col="blue", pch=15, cex=3)
+```
+
+
+## Hierarchical clustering with `hclust()`
+- An important point is that you must calculate the (Euclidian) distance matrix first using `dist()`
+```{r}
+# First we need to calculate point (dis)similarity as the Euclidean distance between observations
+dist_matrix <- dist(x) 
+# The hclust() function returns a hierarchical clustering model
+hc <- hclust(d = dist_matrix)
+# the print method is not so useful here
+hc 
+```
+- Usually, to interpret hierarchical clustering, we use graphs (dendrograms).
+```{r}
+plot(hc)
+```
+
+### To get cluster membership vector, cut the tree with `cutree()`
+- cut at certain height to yielf my separate cluster branches
+```{r}
+plot(hc)
+abline(h=6, col="red")
+cutree(hc, h=6) # cut by height h
+```
+```{r}
+plot(hc)
+abline(h=6, col="red") # better to cut at obvious places (scree)
+abline(h=4, col="blue")
+cutree(hc, h=4)
+```
+```{r}
+# you can also cut the tree via specifying the # of groups
+graph4 <- cutree(hc, k=6)
+graph4
+table(graph4)
+```
+
+### joining the points together (linking clusters)
+- 4 methods:
+1. complete (uses largest of all pair-wise similarities (dot of each cluster furtherst from each other))
+2. simple (uses smallest of all pair-wise similarities)
+3. average (uses average of all pair-wise siilarities)
+4. centroid
+```{r}
+# Using different hierarchical clustering methods
+hc.complete <- hclust(d, method="complete")
+hc.average  <- hclust(d, method="average")
+hc.single   <- hclust(d, method="single")
+```
+
+
+# More practice
+```{r}
+# Step 1. Generate some example data for clustering
+x <- rbind(  matrix(rnorm(100, mean=0, sd = 0.3), ncol = 2), # c1  
+             matrix(rnorm(100, mean = 1, sd = 0.3), ncol = 2), # c2  
+             matrix(c(rnorm(50, mean = 1, sd = 0.3), # c3           
+                      rnorm(50, mean = 0, sd = 0.3)), ncol = 2))
+colnames(x) <- c("x", "y")
+
+# Step 2. Plot the data without clustering
+plot(x)
+
+# Step 3. Generate colors for known clusters (just so we can compare to hclust results)
+col <- as.factor( rep(c("c1","c2","c3"), each=50) )
+
+plot(x, col=col)
+```
+*Q1. Use the dist(), hclust(), plot() and cutree() functions to return (a) 2 and (b) 3 clusters.* 
+```{r}
+#(a) 2 clusters
+c2 <- hclust(dist(x))
+plot(c2)
+abline(h=2.5, col="red")
+cut2 <- cutree(c2, k = 2)
+table(cut2)
+```
+```{r}
+#(b) 3 clusters
+c3 <- hclust(dist(x))
+plot(c3)
+abline(h=1.7, col="blue")
+cut3 <- cutree(c3, k = 3)
+table(cut3)
+```
+
+Make a plot with our cluster results (focusing on b) 3 clusters) <- checking if it is similar to the og plot
+```{r}
+plot(x, col = cut3)
+```
+
+*Q2. How does this compare to your known 'col' groups?*
+
