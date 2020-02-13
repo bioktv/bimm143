@@ -1,0 +1,40 @@
+---
+title: "Class 12: Structural Bioinformatics (pt. i)"
+date: 2/13/2020
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Inspect the types of structures in the main database for 3D biomolecule data - the PDB.
+
+*Q1. (a) Determine the percentage of structures solved by X-Ray and Electron Microscopy. (b) Can you determine what proportion of structures are protein?*
+```{r}
+stats <- read.csv("Data Export Summary.csv", row.names = 1)
+stats
+```
+**A1. (a) 88.95% and 2.73%; (b) 92.69%**
+```{r}
+# Calculate % values for each 'method'
+values_a <- (stats[,"Total"] / (sum(stats[, "Total"])) ) * 100
+## could use stats$Total instead of stats[, "Total"]
+names(values_a) <- rownames(stats)
+round(values_a, 2)
+
+# (a) % of structures solved by X-RAY & E- MICROSCOPY
+stats[1, "Total"] / sum(stats$Total) * 100
+stats[3, "Total"] / sum(stats$Total) * 100
+
+# (b) What proportions of structures are proteins?
+values_b <- sum(stats$Proteins) / sum(stats$Total) * 100
+round(values_b, 2)
+```
+
+*Q2. Type HIV in the PDB website search box on the home page and determine how many HIV-1 protease structures are in the current PDB?*
+**A2. 1289**
+
+*Q3. Water molecules normally have 3 atoms. Why do we see just one atom per water molecule in this structure?*
+
+*Q4. There is a conserved water molecule in the binding site. Can you identify this water molecule? What residue number does this water molecule have?*
