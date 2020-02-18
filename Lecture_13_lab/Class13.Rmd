@@ -1,0 +1,37 @@
+---
+title: "Class13"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Download and clean HIV-Pr receptor structure
+- DL 1HSG PDB structure from online database, remove bound drug from Merk and write out a protein-only and ligand-only new set of PDB files.
+- We will be using `get.pdb()`, `read.pdb()`, `atom.select()`, and `write.pdb()` functions from **bio3d package**.
+```{r Getting the files}
+# load package (recall: you already installed it a while back inside the console)
+library(bio3d)
+# get. will download the data for you
+file.name <- get.pdb("1hsg")
+
+hiv <- read.pdb(file.name)
+hiv
+```
+```{r Protein-only and Ligand-only}
+# select protein only
+prot <- atom.select(hiv, "protein", value = T)
+lig <- atom.select(hiv, "ligand", value = T)
+# can also use trim.pdb()
+## prot <- trim.pdb(hiv, "protein")
+## lig <- trim.pdb(hiv, "ligand")
+
+# make the files
+write.pdb(prot, file = "1hsg_protein.pdb")
+write.pdb(lig, file = "1hsg_ligand.pdb")
+# can view the files with bio3d.view()
+# to check protein file, can print to see that there is only MK1
+
+```
+
