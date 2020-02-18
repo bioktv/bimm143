@@ -34,4 +34,32 @@ write.pdb(lig, file = "1hsg_ligand.pdb")
 # to check protein file, can print to see that there is only MK1
 
 ```
+So far,
+PDB
+>protein
+>>.pdbqt
+>>>added hydrogens; atom types; charges
+>ligand
+
+# 1.5 Prepare a docking configuration file
+(check the '1.5 docking config file' text file)
+- This deﬁnes your protein (receptor), ligand (ligand) number of docking modes to generate (num_modes). 
+- All the docked modes will be collated in a ﬁle deﬁned by out (all.pdbqt).
+
+# Docking ligands into HIV-1 protease with Autodock Vina
+- download the application
+- in your terminal, use command: 
+> "\Program Files (x86)\The Scripps Research Institute\Vina\vina.exe" -config config.txt --log log.txt
+
+- you should have 2 new files all.pdbqt and log.txt
+
+### Inspecting your docking results
+```{r}
+library(bio3d)
+res <- read.pdb("all.pdbqt", multi = T)
+write.pdb(res, "results.pdb")
+```
+Lower affinity will be closer to the actual.
+- In VMD, you can see results.pdb molecule at mode 1 is most similar to MK1.
+
 
