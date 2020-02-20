@@ -1,0 +1,186 @@
+---
+title: "Lab15"
+author: "Kimberly"
+date: "2/20/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r The Data}
+# setting up the data
+counts <- read.csv("airway_scaledcounts.csv", stringsAsFactors = FALSE)
+metadata <-  read.csv("airway_metadata.csv", stringsAsFactors = FALSE)
+
+# checking
+head(counts)
+head(metadata)
+
+# how many genes are we dealing with?
+nrow(counts)
+```
+- Important: The sample IDs in the "metadata" sheet (SRR####) (column 1) exactly match the column names of the "counts" data (column 2-8), except for column 1, which contains the Ensembl gene ID.
+
+## Calculate avg of counts per gene for control samples and compare it to those of drug-treated samples.(See beginning of lecture notes.)
+- See if there is a difference overall for a given gene.
+
+**CONTROL**
+```{r Searching for the correct dataset}
+metadata$dex == "control"
+
+# we want to access the ID of the controls
+#control <- metadata[metadata$dex == "control", ]$id
+# control
+
+control <- metadata[metadata$dex == "control",]
+# AKA metadata$id[ metadata$dex == "control" ]
+
+# code below gives you table of all control data
+# metadata[metadata$dex == "control", ]
+
+counts[, control$id]
+```
+```{r Finding the avg of CONTROL samples}
+control.mean <- rowSums(counts[ , control$id] ) / nrow(control)
+control.mean
+names(control.mean) <- counts$ensgene
+```
+
+**TREATED**
+```{r Finding the avg of TREATED samples}
+metadata$dex == "treated"
+
+treated <- metadata[metadata$dex == "treated",]
+
+counts[, treated$id]
+
+treated.mean <- rowSums(counts[, treated$id]) / nrow(treated)
+treated.mean
+```
+
+Combining our meancount data for bookkeeping purposes.
+```{r}
+meancounts <- data.frame(control.mean, treated.mean)
+meancounts
+```
+
+## Creating a plot
+Inspection: treated.mean vs. control.mean
+- if there is no effect, data should land on a straight line (averages would also be the same point).
+```{r}
+plot(meancounts)
+```
+We had almost 40,000 genes, but these dots do not look like 40,000 points. The dense area is all the gene data bunched up.
+- Take the *log of your data* to spread informaton out (and reduce skewing).
+```{r}
+# log = "xy" makes it so that both x and y axis are logged
+plot(meancounts, log = "xy")
+```
+- point outside above the line = more expression in *treated*
+- point outside below the line = more expression in *control*
+
+```{r}
+meancounts$log2fc <- log2( meancounts[, "treated.mean"]/meancounts[, "control.mean"] )
+
+head(meancounts)
+# focus on the last column titled "log2fc"
+```
+- if we have NaN, we are trying to take log of 0
+- Remove the NaN values (these result from zero avg. values in .mean)
+```{r}
+# "which" function tells you which position in the vector fits the condition of what is True
+# example
+x <- data.frame(c(1, 1, 10, 0), c(0, 1, 10 , 0))
+x
+# T if 0, F if not 0
+x == 0
+# finds position of which are '0'
+which(x == 0)
+# finds position of which are '0' and puts it in an array
+which(x == 0, arr.ind = T)
+
+
+ind <- unique( which (x == 0, arr.ind = T)[, "row"])
+x[-ind]
+```
+
+```{r}
+zero.vals <- which(meancounts[, 1:2] == 0, arr.ind = T)
+
+to.rm <- unique(zero.vals[,1])
+mycounts <- meancounts[-to.rm,]
+head(mycounts)
+
+nrow(mycounts)
+```
+Common threshold convention:
+if fold change (fc) is > 2, significant up change #upregulation, if < -2, significant down change #downregulation 
+
+```{r}
+up.ind <- mycounts$log2fc > 2
+down.ind <- mycounts$log2fc < (-2)
+```
+
+How many of each do I have?
+```{r # of upreg; # of downreg}
+sum(up.ind)
+sum(down.ind)
+```
+- To a statistician, FC can sometimes be considered meaningless. FC can be large w/o sig. difference from t-test or ANOVA.
+- To a biologist, FC is almost always considered important.
+1. v small but stat sig FC might not be relevant to a cell's fxn.
+2. interest to kow which genes are most dramatically regulated, as these are often thought to reflect changes in bio meaningful transcripts and/or pathways
+
+## DESeq2 analysis
+- calculates FC AND p-value
+
+Set up input for DESeq by specifying countdata, metadata, and the design (i.e., whchih comparisons we are interested in)
+```{r Set up the input}
+library(DESeq2)
+citation("DESeq2")
+dds <- DESeqDataSetFromMatrix(countData=counts, 
+                              colData=metadata, 
+                              design=~dex, 
+                              tidy=TRUE)
+dds
+```
+```{r DESeq()}
+# The DESeq() function takes a DESeqDataSet and returns a DESeqDataSet, but with lots of other information filled in
+dds <- DESeq(dds)
+
+res <- results(dds)
+res
+```
+
+## Volcano plot
+- We are plotting the p-values, specically
+- each dot is a gene
+- upregulated on the right; downregulated on the left
+```{r Plotting the information}
+plot(res$log2FoldChange, res$padj)
+```
+```{r Logging the plot}
+plot(res$log2FoldChange, log(res$padj))
+```
+To flip the axis to make it look like a volcano, put the (-) log. (Just how the rest of the world does it.)
+```{r Make it look like volcano}
+plot(res$log2FoldChange, -log(res$padj))
+```
+
+Highlighting upregulated and downregulated genes, genes that are sig diff.
+```{r}
+mycols <- "gray"
+plot(res$log2FoldChange, -log(res$padj), col = mycols)
+
+# make a vector that is specific
+mycols <- rep("gray", nrow(res))
+# overwrite the gray ones that are above the change of 2-fold
+mycols[ res$log2FoldChange > 2] <- "red"
+mycols[ res$log2FoldChange < (-2)] <- "blue"
+plot(res$log2FoldChange, -log(res$padj), col = mycols)
+abline(v=c(2, -2), col = "gray", lty=2)
+abline(h = log(0.05), col = "gray", lty = 2)
+```
+
