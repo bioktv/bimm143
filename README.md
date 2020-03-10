@@ -1,3 +1,3 @@
-# bimm143
+# BIMM 143: Bioinformatics
 
 This is my coursework from [BIMM 143 Winter 2020] (https://bioboot.github.io/bimm143_W20/) at UCSD.
