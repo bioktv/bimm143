@@ -13,6 +13,7 @@ This is my coursework from [BIMM 143 Winter 2020](https://bioboot.github.io/bimm
 - Class 10: [Intro to Machine Learning: Mini project lab](https://github.com/bioktv/bimm143/tree/master/Lecture_10)
 - Class 12: [Structural bioinformatics pt. i](https://github.com/bioktv/bimm143/tree/master/Lecture_12_lab)
 - Class 13: [Bioinformatics in drug discovery and design: 1HSG protein](https://github.com/bioktv/bimm143/tree/master/Lecture_13_lab)
+- Class 14: [Genome informatics and high throughput sequencing](https://github.com/bioktv/bimm143/tree/master/Lecture_14.1)
 - Class 15: [Transcriptomics and the analysis of RNA-Seq data](https://github.com/bioktv/bimm143/tree/master/Lecture_14.2_aka_15)
 - Class 16: [Genome annotation and the interpretation of gene lists](https://github.com/bioktv/bimm143/tree/master/Lecture_16)
 - Class 17: [Biological network analysis](https://github.com/bioktv/bimm143/tree/master/Lecture_17)
