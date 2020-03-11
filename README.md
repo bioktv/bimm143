@@ -17,5 +17,5 @@ This is my coursework from [BIMM 143 Winter 2020](https://bioboot.github.io/bimm
 - Class 16: [Genome annotation and the interpretation of gene lists](https://github.com/bioktv/bimm143/tree/master/Lecture_16)
 - Class 17: [Biological network analysis](https://github.com/bioktv/bimm143/tree/master/Lecture_17)
 - Class 18: Cancer genomics
-1. [Lab 1](https://github.com/bioktv/bimm143/tree/master/Lecture_18_Lab1)
-2. [Lab 2](https://github.com/bioktv/bimm143/tree/master/Lecture_18_Lab2)
+  1. [Class 18 Lab 1](https://github.com/bioktv/bimm143/tree/master/Lecture_18_Lab1)
+  2. [Class 18 Lab 2](https://github.com/bioktv/bimm143/tree/master/Lecture_18_Lab2)
