@@ -1,0 +1,85 @@
+---
+title: "Class18_Lab1: Investigating cancer genomics datasets"
+author: "Kimberly"
+date: "3/5/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+NCI-GDC (cancer genomics commons) is a major portal for cancer genomics data.
+
+Here we use the **GenomicDataCommons** bioconductor package, as it provides functions for querying, accessing, and mining the NCI-GDC in R.
+- talk to this database and DL data etc.
+BiocManager::install( c("GenomicDataCommons", "TCGAbiolinks", "maftools") )
+
+```{r}
+library(GenomicDataCommons)
+library(TCGAbiolinks)
+library(maftools)
+```
+
+Check if we can talk to GDC
+```{r}
+status()
+# make sure the $status section says "OK"
+```
+
+## 3. Querying the GDC from R
+```{r}
+# %>% is a pipe operator
+# can be useful in R and sometimes is more clear to read: "Here is the info, this is what we do to it."
+# ex) sum( c(1:10)) == c(1:10) %>% sum()
+
+cases_by_project <- cases() %>%
+  facet("project.project_id") %>%
+  aggregations()
+head(cases_by_project)
+```
+
+```{r}
+x <- cases_by_project$project.project_id
+x
+```
+
+### Make a bar plot of the overview data
+```{r}
+barplot(x$doc_count)
+```
+Heavily skewed! Should normalize it with log transformations.
+
+```{r}
+colvec <- rep("lightblue", nrow(x))
+
+barplot(x$doc_count, log = "y",
+        names.arg = x$key, las = 2, col=colvec)
+```
+
+## 4. Variant analysis w/ R
+- After some exploration of the website I came up with the following query: “cases.project.project_id in ["TCGA-PAAD"] and files.data_type in ["Masked Somatic Mutation"] and files.data_format in ["MAF"].
+
+Find files available for PAAD project that we can then examine variants from.
+```{r}
+maf.file <- GDCquery_Maf(tumor="PAAD", pipelines = "mutect")
+head(maf.file)
+```
+
+### MAF analysis
+Read in the  MAF file we found:
+```{r}
+vars = read.maf(maf = maf.file, verbose = FALSE)
+```
+
+Now make a summary plot of this data
+`plotmafSummary()` is a function that exists within the maftools package.
+```{r}
+plotmafSummary(vars)
+```
+
+### Drawing oncoplots or waterfall plots
+```{r}
+oncoplot(maf = vars, top = 10)
+```
+- What are the top mutated genes? --> 77% (all missense mutations)

@@ -1,0 +1,96 @@
+---
+title: "Class18_Lab2"
+author: "Kimberly"
+date: "3/5/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Q1: **Identify sequence regions that contain all 9-mer peptides that are only found in the tumor.**
+- Hint: You will need to first identify the sites of mutation in the above sequences and then extract the surrounding subsequence region. 
+- This subsequence should encompass all possible 9-mers in the tumor derived sequence. 
+- Basically, extract the subsequence from 8 residues before and 8 residues after all point mutations in the tumor sequence.
+**BASICALLY: What are the tumor specific AA?**
+- look at differences when you look at alignments (such as on MUSCLE or in R here)
+
+Open up the FASTA file with `bio3d`.
+```{r}
+library(bio3d)
+seqs <- read.fasta("lecture18_sequences.fa")
+seqs
+
+# seqaln can be used for alignment but it seems the provided sequences are already aligned
+# aln <- seqaln(seqs)
+```
+- Can see the empty gaps to see the differences between the WT and mutant sequences.
+
+Q2: **Identify 9-mer peptides in the identified sequence regions unique to the tumor that can be potentially presented to T cells.**
+- 8 before and 8 after the D-->L gap in the first row of sequence.
+- *A2. Cancer-specific sub-sequence: S P L P S Q A M L D L M L S P D D*
+
+Can simply look at the alignment OR do it in R:
+1. Where is the L?
+- Calculate ID per equivalent (i.e., aligned) poisition and use that info to find non-identical sites that do not contain gaps (i.e., indels).
+```{r}
+## Calculate positional identity scores
+idels <- conserv(seqs$ali, method="identity")
+mutant.sites <- which(idels < 1) 
+mutant.sites
+
+## Exclude gap possitions from analysis (in this case, it's all the ---- at the end)
+gaps <- gap.inspect(seqs)
+mutant.sites_2 <- mutant.sites[mutant.sites %in% gaps$f.inds]
+
+#side note: the %in% operator
+# x <- c(1:6)
+# y <- c(1:4)
+# x %in% y
+# [1]  TRUE  TRUE  TRUE  TRUE FALSE FALSE
+
+mutant.sites_2
+```
+
+2. Extract to find the 8 before (-8) and 8 after (+8), i.e., the sequence segment containing all possible 9-mer)
+```{r}
+## Sequence positions surounding each mutant site
+start.position <- mutant.sites_2 - 8
+end.position <-  mutant.sites_2 + 8
+
+start.position
+end.position
+```
+
+```{r}
+# Extract each sub-sequence
+seqs$ali[2, start.position[1]:end.position[1] ]
+```
+
+```{r}
+## Make a "names" label for our output sequences (one per mutant)
+mutant.names <- paste0(seqs$ali["P53_wt",mutant.sites],
+                       mutant.sites,
+                       seqs$ali["P53_mutant",mutant.sites])
+
+mutant.names
+```
+
+```{r}
+# Blank matrix to store sub-sequences
+store.seqs <- matrix("-", nrow=length(mutant.sites), ncol=17)
+rownames(store.seqs) <- mutant.names
+
+## Extract each sub-sequence
+for(i in 1:length(mutant.sites)) {
+  store.seqs[i,] <- seqs["P53_mutant",start.position[i]:end.position[i]]
+}
+
+store.seqs
+```
+
+```{r}
+write.fasta(seqs = store.seqs, ids = mutant.names, file="mutantseqs.fa", gap = F)
+```
+
