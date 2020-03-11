@@ -1,0 +1,189 @@
+---
+title: "Class16: Pathway Analysis from RNA-Seq"
+author: "Kimberly"
+date: "2/27/2020"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+- The authors report on differential analysis of lung fibroblasts in response to loss of the developmental transcription factor HOXA1. 
+- Their results indicate that HOXA1 is required for lung fibroblast and HeLa cell cycle progression. 
+- In particular, their analysis show that **"loss of HOXA1 results in significant expression level changes in thousands of individual transcripts, along with isoform switching events in key regulators of the cell cycle".** 
+
+- For our session we have used their Sailfish gene-level estimated counts and hence are restricted to protein-coding genes only.
+```{r}
+library(DESeq2)
+
+metaFile <- "GSE37704_metadata.csv"
+countFile <- "GSE37704_featurecounts.csv"
+
+# Import metadata and take a peak
+colData = read.csv(metaFile, row.names=1)
+head(colData)
+
+# '=' and '<-" are the same but people tend to save '=' for arguments such as the row.names=1
+countData = read.csv(countFile, row.names=1)
+head(countData)
+```
+
+There are `r nrow(countData)` genes in this dataset and `r ncol(countData)` experiments/samples.
+- If you knit the document, the stuff inside `` will be modified to output the actual results.
+- Answer: "There are *19808* genes in this dataset and *7* experiments/samples."
+
+**NOTICE**: There are actually only 6 experiments. R counted ALL columns, including one called "length".
+- **Gotta clean it up!!**
+
+```{r}
+# Indexing so that it includes everything except the first column.
+countData = countData[,-1]
+# could also be countData[ 2:7 ,]
+head(countData)
+```
+
+Let's remove genes where we have no data (i.e., zero counts in all experiments).
+- Sum across the rows (`nrowSums()`) and those without counts in it can be exluded
+```{r}
+# finding all the data that is 0 (gives you T)
+# rowSums(countData) == 0
+countData_2 <- countData[rowSums(countData) != 0, ]
+countData_2
+
+# How many genes do we have data for?
+nrow(countData_2)
+```
+
+## Running DESeq2
+Now we get to run DESeq on our data
+```{r}
+library(DESeq2)
+
+# focusing on the condition portion of the data
+dds <- DESeqDataSetFromMatrix(countData=countData,
+                             colData=colData,
+                             design=~condition)
+
+dds <- DESeq(dds)
+```
+
+Check out the results.
+```{r}
+res <- results(dds)
+res
+```
+
+### Plot a volcano plot
+Summary volcano plot of our results to date.
+```{r}
+plot(res$log2FoldChange, res$padj)
+# the graph above is not very helpful because we want to focus on teeny tiny p-values. Those are the ones squished on the very bottom edge of the volcano.
+```
+
+take the log to skew the data
+```{r}
+plot(res$log2FoldChange, -log(res$padj))
+abline(h = -log(0.05), col = "red")
+abline(v = c(-2,2), col = "blue")
+# should look for things above the red line and to the left and right of the blue lines bc those are the ones with sig change
+```
+
+## Adding gene annotations
+Since we mapped and counted against the Ensembl annotation, our results only have information about Ensembl gene IDs. However, our pathway analysis downstream will use KEGG pathways, and genes in KEGG pathways are annotated with Entrez gene IDs. So lets add them as we did the last day.
+
+I would install these with `BiocManager::install("AnnotationDbi")` and
+`BiocManager::install("org.Hs.eg.db")` (placed in the console).
+```{r}
+library("AnnotationDbi")
+library("org.Hs.eg.db")
+
+# What columns are avaiable in the org.Hs.eg.db dataset?
+columns(org.Hs.eg.db)
+# The different "languages" (notations) within the different datasets, such as GO, UNIPROT, OMIM, ENSEMBL
+```
+
+Let's add extra annotations to our result objects.
+```{r}
+# My results (res) will have rownames with gene names in one language (they were in ENSEMBL type) and take those to translate them to gene "SYMBOL".
+# Take the first value
+res$symbol = mapIds(org.Hs.eg.db,
+                    keys=row.names(res),
+                    keytype="ENSEMBL",
+                    column="SYMBOL",
+                    multiVals="first")
+
+res$entrez = mapIds(org.Hs.eg.db,
+                    keys=row.names(res),
+                    keytype="ENSEMBL",
+                    column="ENTREZID",
+                    multiVals="first")
+
+# This output will show the res data but also two extra columns named "symbol" and "entrez"
+head(res)
+```
+
+Now we ahve our geneIDs in the correct format, we can do pathway analysis.
+- Create a figure with many pathways to understand the mechanism and biology.
+- Here we are going to use the gage package for pathway analysis. Once we have a list of enriched pathways, we're going to use the pathview package to draw pathway diagrams, shading the molecules in the pathway by their degree of up/down-regulation.
+
+1. Install the packages in your R console BiocManager::install( c("pathview", "gage", "gageData") )
+
+```{r}
+library(pathview)
+library(gage)
+library(gageData)
+```
+
+```{r}
+data(kegg.sets.hs)
+data(sigmet.idx.hs)
+
+# Focus on signaling and metabolic pathways only
+kegg.sets.hs = kegg.sets.hs[sigmet.idx.hs]
+
+# Examine the first 3 pathways
+head(kegg.sets.hs, 3)
+```
+
+We have are DEG from for DESeq. Now we have the pathways. Let's check for overlap.
+
+Make an input vector of our nunmeric quantity of interest, e.g., fold change values and make sure it has ENTREZ gene names associatied with it.
+```{r}
+foldchanges <- res$log2FoldChange
+
+# KEGG uses entrez language
+names(foldchanges) = res$entrez
+head(foldchanges)
+```
+
+Now we can run `gage` with this input vector and our KEGG genesets ("gsets").
+```{r}
+# Get the results
+keggres = gage(foldchanges, gsets=kegg.sets.hs)
+```
+
+What is in our results? We can use the `attributes()` function to see what is returned here.
+
+```{r}
+attributes(keggres)
+```
+
+```{r}
+# Let's look at the first few down (less) pathways
+head(keggres$less)
+```
+
+## Make a figure with pathway function in pathview package!
+
+We use the KEGG pathway ID from our top hit along with out `foldchange` vector to view our results as a more useful figure.
+```{r}
+# hsa04110 is Cell cycle pathway
+pathview(gene.data=foldchanges, pathway.id="hsa04110")
+# outputs files "hsa04110.pathview.png" in your working area (files tab in the bottom right window)
+```
+Can include the images into your workbook with the knitr package.
+```{r}
+knitr::include_graphics("hsa04110.pathview.png")
+```
+
