@@ -1,0 +1,194 @@
+---
+title: "Class07"
+author: "Kimberly"
+date: "1/28/2020"
+output: html_document
+---
+
+# echoes all the code that is ran
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# My functions
+- you can modify this in the console or md and execute it, it will update your vairables in the environment tab (righthand side)
+```{r}
+# # Our rescale function from the end of lecture 9
+rescale <- function(x, na.rm=TRUE, plot=FALSE, ...) {
+
+  # '!' means 'not'
+  if(na.rm) {
+    rng <-range(x, na.rm=TRUE)
+  } else {
+    rng <-range(x)
+  }
+
+  answer <- (x - rng[1]) / (rng[2] - rng[1])
+  if(plot) { 
+    plot(answer, ...) 
+  }
+
+  return(answer)
+}
+```
+
+# Creating your own error warnings
+## warning() and stop()
+both output text at certain times
+- warning() continues on after the warning
+-- use for tolerable error
+- stop() breaks the function
+-- use for intolerable error
+
+```{r}
+rescale2 <- function(x, na.rm=TRUE, plot=FALSE, ...) {
+  # Our rescale function from lecture 10
+
+  if( !is.numeric(x) ) {
+    stop("Input x should be numeric", call.=FALSE)
+  }
+  
+  rng <-range(x, na.rm=TRUE)
+
+  answer <- (x - rng[1]) / (rng[2] - rng[1])
+  if(plot) { 
+    plot(answer, ...) 
+  }
+
+  return(answer)
+}
+
+```
+
+# is.na() helps find missing values
+- also works on character type vectors
+```{r}
+x <- c(1, 2, NA, 3, NA)
+y <- c(NA, 3, NA, 3, 4)
+z <- c(NA, 2)
+
+print(is.na(x))
+# outputs [1] FALSE FALSE  TRUE FALSE  TRUE
+
+# check if x & y have NA in the same position
+print(is.na(x) & is.na(y))
+# outputs [1] FALSE FALSE  TRUE FALSE FALSE
+
+```
+
+## Write a function to check if x & y have NA in same position
+```{r}
+is_both_na <- function(x, y) {
+  if(length(x) != length(y)) {
+    stop("Your inputs aren't the same length")
+  }
+  is.na(x) & is.na(y)
+  
+}
+```
+
+### modified both_na3 function
+```{r}
+rescale_new <- function(x, y) {
+  ## Print some info on where NA's are as well as the number of them 
+  if(length(x) != length(y)) {
+    stop("Input x and y should be vectors of the same length", call.=FALSE)
+  }
+  na.in.both <- ( is.na(x) & is.na(y) )
+  na.number <- sum(na.in.both) # T = 1, F = 0; gives u count of NAs in both x and y
+  na.which <- which(na.in.both) # gives position of T (NAs)
+  
+  message("Found ", na.number, " NA's at position(s):", 
+          paste(na.which, collapse=", ") ) 
+  
+  return( list(number=na.number, which=na.which) )
+}
+```
+
+# DATA FRAMES
+- tables basically
+formatting:
+- subsetting df[row, column]
+-- df[, 1] <-- gives you entire first column (outputted in a single line, so it looks like a row though)
+-- df[, "header_name"] <-- works the same way as above
+-- df$IDs <-- works the same way as above
+-- gene.colname = "header name" <-- works the same way as above
+-- df[ ,gene.colname] <-- works the same way as above
+
+```{r}
+# Which genes are present in BOTH datasets/frames?
+x <- df1$IDs
+y <- df2$IDs
+
+intersect(x, y)
+# outputs "gene2" "gene3"
+
+# Maybe you want the entire dataset compared? (Not just gene names)
+
+## What are positions of x in y?
+### takes all of x: which elements of x are in y (returns boolean)
+x %in% y
+# outputs [1] FALSE  TRUE  TRUE
+
+# subset: x (df1 IDs) of x in y takes those that are T
+x[x %in% y]
+# outputs "gene2" "gene3"
+
+```
+
+making a matrix 
+```{r}
+cbind(x[x %in% y], y[y %in% x])
+```
+making a function using the matrix
+```{r}
+# highlight piece of code, >code >extract function
+# modifies the highlighted code
+gene_intersect <- function(x, y) {
+  cbind(x[x %in% y], y[y %in% x])
+}
+
+x <- df1$IDs
+y <- df2$IDs
+
+gene_intersect(x, y)
+```
+
+# function that does everything we've done so far
+```{r}
+
+gene_intersect2 <- function(df1, df2) { 
+   cbind( df1[ df1$IDs %in% df2$IDs, ], # takes T/F portion (stuff inside []) and subsets the entire df1 (IDs and exp) using those T/F results
+          df2[ df2$IDs %in% df1$IDs, "exp"] )
+}
+
+
+gene_intersect3 <- function(df1, df2, gene.colname="IDs") { 
+   cbind( df1[ df1[,gene.colname] %in% df2[,gene.colname], ], 
+          exp2=df2[ df2[,gene.colname] %in% df1[,gene.colname], "exp"] )
+}
+
+# can specify diff columns with the last parameter
+gene_intersect3(df1, df2, gene.colname = "IDs")
+
+## colnames("new_name", "old_name") changes names of headers
+# colnames(df1) <- c("new_names", "exp")
+```
+
+# readability
+```{r}
+gene_intersect4 <- function(df1, df2, gene.colname="IDs") { 
+
+  df1.name <- df1[,gene.colname]
+  df2.name <- df2[,gene.colname]
+
+  df1.indexes <- df1.name %in% df2.name
+  df2.indexes <- df2.name %in% df1.name
+
+   cbind( df1[ df1.indexes, ], 
+          exp2=df2[ df2.indexes, "exp"] )
+}
+
+gene_intersect4(df1, df2)
+# gene_intersect4(df1, df2, gene.colname = "IDs") works too
+```

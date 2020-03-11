@@ -1,0 +1,61 @@
+---
+title: "Class07 packages md"
+author: "Kimberly"
+date: "1/28/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# R PACKAGES
+## CRAN (Comprehensive R Archive Network) & Bioconductor
+
+Installing a package (place in console; a one-time thing)
+```{r}
+# install.packages("")
+# library("")
+```
+
+# Using ggplot2 (only takes in dfs)
+```{r}
+# built-in dataset iris
+# dim = dimensions
+dim(iris)
+
+# head = shows top 5 rows of iris
+head(iris)
+
+# levels()???
+```
+
+# Aesthetics (how your data are represented visually)
+```{r}
+# aes = aesthetics
+my_plot <- ggplot(data = iris, aes(x = Sepal.Length, y = Sepal.Width))
+
+# geom_something() # geometric objects placed into plot (lines, points, polygons, etc.)
+my_plot + geom_point()
+```
+
+```{r}
+# adding aes function into geom_point function to modify the geom_point aesthetics
+ggplot(data = iris, aes(x = Sepal.Length, y = Sepal.Width, color = Species)) + geom_point(aes(shape = Species), size = 3)
+```
+
+
+Best fit line to show relationship
+```{r}
+ggplot(data = iris, aes(x = Sepal.Length, y = Sepal.Width, color = Species)) + 
+  geom_point(aes(shape = Species), size = 3) + geom_smooth(method = 'ln')
+```
+
+# Distribution plots (bar graphs, histograms, etc.)
+```{r}
+# no x and y, for histograms, only need 1 variable
+ggplot(data = iris, aes(Sepal.Length, fill = Species)) + geom_bar(stat = 'Count')
+
+# change transparency w/ 'alpha = ##' as an argument in the geom_bar
+```
+

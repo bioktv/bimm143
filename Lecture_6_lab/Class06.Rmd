@@ -1,0 +1,104 @@
+---
+title: "Class 6 R functions"
+author: "Kimberly"
+date: "1/23/2020"
+output:
+  word_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# '#' headings in R markdown work the same way as in python
+
+Let's see more about **file importing/reading**. The main read function in base R is `read.table()`.
+
+## Importing test1.txt
+```{r}
+# read.table("test1.txt") will put all data in col 1
+# make it right
+t1 <- read.table("test1.txt", sep = ",", header = T)
+t1
+# could also just use read.csv("test1.txt")
+```
+
+## Importing test2.txt
+```{r}
+# read.table("test2.txt") puts everything in col 1 again
+# fix it
+read.table("test2.txt", header = T, sep = "$")
+```
+
+## Importing test3.txt
+```{r}
+read.table("test3.txt", header = T)
+```
+
+Writing functions:
+### FORMAT
+`name_of_function` <- function(arg1, arg2,...) {
+  statements/conditions
+  return(something)
+}
+
+### How does it work with **VECTORS** as inputs?
+```{r}
+add <- function(x, y = 1) {
+  x + y
+}
+
+print(add(c(1,2,4)))
+# foiling
+print(add(c(1,2,4), c(1,2,4)))
+print(add(c(1,2,4), 4))
+```
+
+## range() function
+```{r}
+x <- c(4, 4, 10, 3, 11)
+range(x)
+```
+
+```{r}
+rescale <- function(x) {
+  rng <- range(x)
+  (x - rng[1]) / (rng[2] - rng[1])
+}
+print(rescale(1:10))
+
+# code below outputs NA NA NA NA NA
+# rescale( c(1, 2, NA, 3, 10))
+# gives range NA NA when calling rng <- range(x)
+# FIX IT by going to function body to take into account NA
+# NEW FUNCTION adds in argument 'na.rm = T'
+```
+```{r}
+rescale_new <- function(x) {
+  rng <- range(x, na.rm = T)
+  (x - rng[1]) / (rng[2] - rng[1])
+}
+rescale_new( c(1, 2, NA, 3, 10))
+```
+
+EXTRA STUFF from lecture slides
+```{r}
+rescale_3 <- function(x, na.rm=TRUE, plot=FALSE) {    
+  rng <-range(x, na.rm=na.rm)    
+  print("Hello")   
+  
+  answer <-(x - rng[1]) / (rng[2] - rng[1])   
+  
+  print("is it me you are looking for?")   
+  
+  if(plot) {       
+    plot(answer, typ="b", lwd=4)    
+  }   
+  print("I can see it in ...")
+  return(answer)
+}
+
+rescale_3(x)
+```
+
